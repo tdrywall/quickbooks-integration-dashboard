@@ -6,7 +6,8 @@ A React-based dashboard for QuickBooks Online integration with estimate manageme
 - **Production Server**: http://192.168.2.169:3001
 - **Auto-deployment**: Enabled via GitHub Actions
 - **GitHub Secrets**: ✅ Configured
-- **Status**: Ready for deployment
+- **Server Setup**: ✅ Complete
+- **Status**: 🚀 Deploying...
 - **Last Updated**: October 26, 2025
 
 ## Features

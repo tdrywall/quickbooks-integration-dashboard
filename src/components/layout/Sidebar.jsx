@@ -10,6 +10,7 @@ const Sidebar = () => {
   const navItems = [
     { path: '/', label: 'Dashboard', icon: 'chart-pie' },
     { path: '/auth', label: 'Authentication', icon: 'key' },
+    { path: '/estimates', label: 'Estimates', icon: 'document-text' },
     { path: '/operations', label: 'Operations', icon: 'cog' },
     { path: '/help', label: 'API Help', icon: 'question-circle' }
   ];

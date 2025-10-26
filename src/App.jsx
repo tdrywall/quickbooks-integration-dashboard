@@ -7,6 +7,8 @@ import Dashboard from './components/pages/Dashboard';
 import AuthenticationSetup from './components/pages/AuthenticationSetup';
 import OperationsCenter from './components/pages/OperationsCenter';
 import ApiHelp from './components/pages/ApiHelp';
+import OAuthCallback from './components/pages/OAuthCallback';
+import EstimateViewer from './components/pages/EstimateViewer';
 
 function App() {
   return (
@@ -21,7 +23,10 @@ function App() {
                 <Route path="/" element={<Dashboard />} />
                 <Route path="/auth" element={<AuthenticationSetup />} />
                 <Route path="/operations" element={<OperationsCenter />} />
+                <Route path="/estimates" element={<EstimateViewer />} />
                 <Route path="/help" element={<ApiHelp />} />
+                <Route path="/callback" element={<OAuthCallback />} />
+                <Route path="/oauth/callback" element={<OAuthCallback />} />
               </Routes>
             </main>
           </div>

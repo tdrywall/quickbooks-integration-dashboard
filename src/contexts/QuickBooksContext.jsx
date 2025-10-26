@@ -8,11 +8,12 @@ export const QuickBooksProvider = ({ children }) => {
   const [auth, setAuth] = useState({
     clientId: '',
     clientSecret: '',
-    redirectUri: '',
+    redirectUri: 'https://eoge0jr9es1s20s.m.pipedream.net',
     environment: 'sandbox',
-    realmId: '',
+    realmId: '9341455227664304',
     accessToken: '',
     refreshToken: '',
+    authorizationCode: 'XAB11761421553ofDkEGRr4FlkWP8QvDl1b5fu9XvBkH3BMMPB',
     tokenExpiryDate: '',
     isAuthenticated: false
   });
@@ -112,30 +113,152 @@ export const QuickBooksProvider = ({ children }) => {
     };
   }, [auth.clientId, auth.redirectUri]);
 
-  // Simulate token refresh
-  const refreshToken = useCallback(() => {
-    return new Promise((resolve) => {
-      // Simulate token refresh - in a real implementation this would
-      // call the Intuit refresh token endpoint
-      setTimeout(() => {
-        const newAccessToken = 'refreshed_' + Math.random().toString(36).substring(2, 15);
-        const expiryDate = new Date();
-        expiryDate.setHours(expiryDate.getHours() + 1);
-        
-        setAuth(prevAuth => ({
-          ...prevAuth,
-          accessToken: newAccessToken,
-          tokenExpiryDate: expiryDate.toISOString(),
-          isAuthenticated: true
-        }));
-        
-        resolve({ 
-          success: true, 
-          message: 'Token refreshed successfully!' 
-        });
-      }, 1500);
-    });
-  }, []);
+  // Exchange authorization code for access tokens
+  const exchangeAuthCodeForTokens = useCallback(async (authorizationCode) => {
+    if (!auth.clientId || !auth.clientSecret || !authorizationCode || !auth.redirectUri) {
+      return { 
+        success: false, 
+        message: 'Client ID, Client Secret, Authorization Code, and Redirect URI are required' 
+      };
+    }
+
+    try {
+      const tokenEndpoint = auth.environment === 'sandbox' 
+        ? 'https://oauth.platform.intuit.com/oauth2/v1/tokens/bearer'
+        : 'https://oauth.platform.intuit.com/oauth2/v1/tokens/bearer';
+
+      const requestBody = new URLSearchParams({
+        grant_type: 'authorization_code',
+        code: authorizationCode,
+        redirect_uri: auth.redirectUri
+      });
+
+      const credentials = btoa(`${auth.clientId}:${auth.clientSecret}`);
+
+      const response = await fetch(tokenEndpoint, {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'Authorization': `Basic ${credentials}`
+        },
+        body: requestBody
+      });
+
+      if (!response.ok) {
+        const errorData = await response.text();
+        console.error('Token exchange failed:', errorData);
+        return { 
+          success: false, 
+          message: `Token exchange failed: ${response.status} ${response.statusText}` 
+        };
+      }
+
+      const tokenData = await response.json();
+      
+      // Calculate token expiry date
+      const expiryDate = new Date();
+      expiryDate.setSeconds(expiryDate.getSeconds() + tokenData.expires_in);
+
+      // Update auth state with tokens
+      const updatedAuth = {
+        ...auth,
+        accessToken: tokenData.access_token,
+        refreshToken: tokenData.refresh_token,
+        tokenExpiryDate: expiryDate.toISOString(),
+        isAuthenticated: true
+      };
+
+      setAuth(updatedAuth);
+      
+      // Save to localStorage
+      localStorage.setItem('qbo_auth', JSON.stringify(updatedAuth));
+
+      return { 
+        success: true, 
+        message: 'Successfully exchanged authorization code for access tokens!' 
+      };
+
+    } catch (error) {
+      console.error('Error exchanging auth code:', error);
+      return { 
+        success: false, 
+        message: `Error exchanging authorization code: ${error.message}` 
+      };
+    }
+  }, [auth]);
+
+  // Real token refresh using QuickBooks API
+  const refreshToken = useCallback(async () => {
+    if (!auth.refreshToken || !auth.clientId || !auth.clientSecret) {
+      return { 
+        success: false, 
+        message: 'Refresh token, Client ID, and Client Secret are required' 
+      };
+    }
+
+    try {
+      const tokenEndpoint = 'https://oauth.platform.intuit.com/oauth2/v1/tokens/bearer';
+
+      const requestBody = new URLSearchParams({
+        grant_type: 'refresh_token',
+        refresh_token: auth.refreshToken
+      });
+
+      const credentials = btoa(`${auth.clientId}:${auth.clientSecret}`);
+
+      const response = await fetch(tokenEndpoint, {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'Authorization': `Basic ${credentials}`
+        },
+        body: requestBody
+      });
+
+      if (!response.ok) {
+        const errorData = await response.text();
+        console.error('Token refresh failed:', errorData);
+        return { 
+          success: false, 
+          message: `Token refresh failed: ${response.status} ${response.statusText}` 
+        };
+      }
+
+      const tokenData = await response.json();
+      
+      // Calculate token expiry date
+      const expiryDate = new Date();
+      expiryDate.setSeconds(expiryDate.getSeconds() + tokenData.expires_in);
+
+      // Update auth state with new tokens
+      const updatedAuth = {
+        ...auth,
+        accessToken: tokenData.access_token,
+        refreshToken: tokenData.refresh_token || auth.refreshToken, // Some refreshes don't return new refresh token
+        tokenExpiryDate: expiryDate.toISOString(),
+        isAuthenticated: true
+      };
+
+      setAuth(updatedAuth);
+      
+      // Save to localStorage
+      localStorage.setItem('qbo_auth', JSON.stringify(updatedAuth));
+
+      return { 
+        success: true, 
+        message: 'Token refreshed successfully!' 
+      };
+
+    } catch (error) {
+      console.error('Error refreshing token:', error);
+      return { 
+        success: false, 
+        message: `Error refreshing token: ${error.message}` 
+      };
+    }
+  }, [auth]);
 
   // Update authentication state
   const updateAuth = useCallback((newAuthData) => {
@@ -145,6 +268,215 @@ export const QuickBooksProvider = ({ children }) => {
       isAuthenticated: newAuthData.accessToken ? true : prevAuth.isAuthenticated
     }));
   }, []);
+
+  // Test QuickBooks API connection by fetching company info
+  const testQuickBooksAPI = useCallback(async () => {
+    if (!auth.accessToken || !auth.realmId) {
+      return { 
+        success: false, 
+        message: 'Access token and company ID are required' 
+      };
+    }
+
+    try {
+      const baseUrl = auth.environment === 'sandbox' 
+        ? 'https://sandbox-quickbooks.api.intuit.com'
+        : 'https://quickbooks.api.intuit.com';
+      
+      const apiUrl = `${baseUrl}/v3/company/${auth.realmId}/companyinfo/${auth.realmId}`;
+
+      const response = await fetch(apiUrl, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${auth.accessToken}`
+        }
+      });
+
+      if (!response.ok) {
+        const errorData = await response.text();
+        console.error('API test failed:', errorData);
+        return { 
+          success: false, 
+          message: `API test failed: ${response.status} ${response.statusText}`,
+          data: errorData
+        };
+      }
+
+      const responseData = await response.json();
+      
+      return { 
+        success: true, 
+        message: 'Successfully connected to QuickBooks API!',
+        data: responseData
+      };
+
+    } catch (error) {
+      console.error('Error testing QuickBooks API:', error);
+      return { 
+        success: false, 
+        message: `Error testing API: ${error.message}` 
+      };
+    }
+  }, [auth.accessToken, auth.realmId, auth.environment]);
+
+  // Fetch QuickBooks estimates
+  const fetchEstimates = useCallback(async () => {
+    if (!auth.accessToken || !auth.realmId) {
+      return { 
+        success: false, 
+        message: 'Access token and Realm ID are required' 
+      };
+    }
+
+    try {
+      const baseUrl = auth.environment === 'production' 
+        ? 'https://quickbooks.api.intuit.com'
+        : 'https://sandbox-quickbooks.api.intuit.com';
+
+      const response = await fetch(
+        `${baseUrl}/v3/company/${auth.realmId}/query?query=SELECT * FROM Estimate`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${auth.accessToken}`,
+            'Accept': 'application/json'
+          }
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+      }
+
+      const responseData = await response.json();
+      
+      return {
+        success: true,
+        message: 'Estimates fetched successfully!',
+        data: responseData.QueryResponse?.Estimate || []
+      };
+
+    } catch (error) {
+      console.error('Error fetching estimates:', error);
+      return { 
+        success: false, 
+        message: `Error fetching estimates: ${error.message}` 
+      };
+    }
+  }, [auth.accessToken, auth.realmId, auth.environment]);
+
+  // Fetch a specific estimate by ID
+  const fetchEstimateById = useCallback(async (estimateId) => {
+    if (!auth.accessToken || !auth.realmId) {
+      return { 
+        success: false, 
+        message: 'Access token and Realm ID are required' 
+      };
+    }
+
+    try {
+      const baseUrl = auth.environment === 'production' 
+        ? 'https://quickbooks.api.intuit.com'
+        : 'https://sandbox-quickbooks.api.intuit.com';
+
+      const response = await fetch(
+        `${baseUrl}/v3/company/${auth.realmId}/estimate/${estimateId}`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${auth.accessToken}`,
+            'Accept': 'application/json'
+          }
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+      }
+
+      const responseData = await response.json();
+      
+      return {
+        success: true,
+        message: 'Estimate fetched successfully!',
+        data: responseData.QueryResponse?.Estimate?.[0] || null
+      };
+
+    } catch (error) {
+      console.error('Error fetching estimate:', error);
+      return { 
+        success: false, 
+        message: `Error fetching estimate: ${error.message}` 
+      };
+    }
+  }, [auth.accessToken, auth.realmId, auth.environment]);
+
+  // Create invoice from estimate (for progress invoicing)
+  const createInvoiceFromEstimate = useCallback(async (estimateData, progressOptions = {}) => {
+    if (!auth.accessToken || !auth.realmId) {
+      return { 
+        success: false, 
+        message: 'Access token and Realm ID are required' 
+      };
+    }
+
+    try {
+      const { percentage = 100, description = 'Progress Invoice' } = progressOptions;
+      
+      // Build invoice data based on estimate
+      const invoiceData = {
+        Line: estimateData.Line.map(line => ({
+          ...line,
+          Amount: (line.Amount * percentage / 100).toFixed(2),
+          SalesItemLineDetail: {
+            ...line.SalesItemLineDetail,
+            Qty: line.SalesItemLineDetail?.Qty ? (line.SalesItemLineDetail.Qty * percentage / 100) : 1,
+            UnitPrice: line.SalesItemLineDetail?.UnitPrice || line.Amount
+          }
+        })),
+        CustomerRef: estimateData.CustomerRef,
+        TxnDate: new Date().toISOString().split('T')[0],
+        PrivateNote: `${description} - ${percentage}% of Estimate ${estimateData.DocNumber}`
+      };
+
+      const baseUrl = auth.environment === 'production' 
+        ? 'https://quickbooks.api.intuit.com'
+        : 'https://sandbox-quickbooks.api.intuit.com';
+
+      const response = await fetch(
+        `${baseUrl}/v3/company/${auth.realmId}/invoice`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${auth.accessToken}`,
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(invoiceData)
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+      }
+
+      const responseData = await response.json();
+      
+      return {
+        success: true,
+        message: 'Progress invoice created successfully!',
+        data: responseData.QueryResponse?.Invoice?.[0] || responseData
+      };
+
+    } catch (error) {
+      console.error('Error creating progress invoice:', error);
+      return { 
+        success: false, 
+        message: `Error creating progress invoice: ${error.message}` 
+      };
+    }
+  }, [auth.accessToken, auth.realmId, auth.environment]);
 
   // Generate mock response based on operation
   const generateMockResponse = useCallback((params) => {
@@ -404,7 +736,12 @@ export const QuickBooksProvider = ({ children }) => {
         updateAuth,
         saveAuthInfo,
         generateAuthUrl,
+        exchangeAuthCodeForTokens,
         refreshToken,
+        testQuickBooksAPI,
+        fetchEstimates,
+        fetchEstimateById,
+        createInvoiceFromEstimate,
         executeOperation,
         operationsHistory,
         clearOperationsHistory,

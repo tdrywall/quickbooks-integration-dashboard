@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { QuickBooksContext } from '../../contexts/QuickBooksContext';
 
 const AuthenticationSetup = () => {
-  const { auth, updateAuth, saveAuthInfo, generateAuthUrl, refreshToken } = useContext(QuickBooksContext);
+  const { auth, updateAuth, saveAuthInfo, generateAuthUrl, exchangeAuthCodeForTokens, refreshToken, testQuickBooksAPI } = useContext(QuickBooksContext);
   const [localAuth, setLocalAuth] = useState(auth);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -12,7 +12,12 @@ const AuthenticationSetup = () => {
 
   // Update local state when context changes
   useEffect(() => {
-    setLocalAuth(auth);
+    setLocalAuth({
+      ...auth,
+      authorizationCode: auth.authorizationCode || 'XAB11761421553ofDkEGRr4FlkWP8QvDl1b5fu9XvBkH3BMMPB',
+      realmId: auth.realmId || '9341455227664304',
+      redirectUri: auth.redirectUri || 'https://eoge0jr9es1s20s.m.pipedream.net'
+    });
   }, [auth]);
 
   // Handle input changes
@@ -64,6 +69,57 @@ const AuthenticationSetup = () => {
     }
   };
 
+  // Handle exchanging authorization code for tokens
+  const handleExchangeTokens = async () => {
+    setIsLoading(true);
+    setError(null);
+    setSuccessMessage(null);
+    
+    try {
+      // Use backend server to exchange tokens
+      const response = await fetch('/api/exchange-token', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          code: localAuth.authorizationCode || 'XAB11761421553ofDkEGRr4FlkWP8QvDl1b5fu9XvBkH3BMMPB',
+          redirectUri: localAuth.redirectUri || 'https://eoge0jr9es1s20s.m.pipedream.net',
+          clientId: localAuth.clientId,
+          clientSecret: localAuth.clientSecret
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error?.error_description || 'Token exchange failed');
+      }
+
+      const tokenData = await response.json();
+      
+      // Update auth context with new tokens
+      const updatedAuth = {
+        ...localAuth,
+        accessToken: tokenData.access_token,
+        refreshToken: tokenData.refresh_token,
+        tokenExpiryDate: new Date(Date.now() + (tokenData.expires_in * 1000)).toISOString(),
+        isAuthenticated: true,
+        realmId: localAuth.realmId || '9341455227664304'
+      };
+      
+      setLocalAuth(updatedAuth);
+      updateAuth(updatedAuth);
+      
+      setSuccessMessage('✅ Tokens exchanged successfully! You can now access QuickBooks data.');
+      setTimeout(() => setSuccessMessage(null), 8000);
+      
+    } catch (err) {
+      setError(`Error exchanging tokens: ${err.message}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // Handle token refresh
   const handleRefreshToken = async () => {
     setIsLoading(true);
@@ -91,10 +147,60 @@ const AuthenticationSetup = () => {
     navigate('/operations');
   };
 
+  const handleTestAPI = async () => {
+    setIsLoading(true);
+    setError(null);
+    setSuccessMessage(null);
+    
+    try {
+      const response = await fetch('/api/company-info', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          accessToken: localAuth.accessToken,
+          realmId: localAuth.realmId || '9341455227664304',
+          environment: localAuth.environment || 'sandbox'
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error?.Fault?.[0]?.Error?.[0]?.Detail || 'API test failed');
+      }
+
+      const data = await response.json();
+      const companyName = data.QueryResponse?.CompanyInfo?.[0]?.CompanyName || 'Unknown Company';
+      
+      setSuccessMessage(`✅ QuickBooks API connection successful!\nCompany: ${companyName}`);
+      setTimeout(() => setSuccessMessage(null), 8000);
+      
+    } catch (error) {
+      setSuccessMessage(`❌ API test error: ${error.message}`);
+      setTimeout(() => setSuccessMessage(null), 8000);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
+    <>
     <div className="bg-white rounded-lg shadow-md max-w-5xl mx-auto">
       <div className="p-6">
         <h2 className="text-xl font-bold mb-6">OAuth 2.0 Authentication Configuration</h2>
+        
+        <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+          <h3 className="font-semibold text-green-800 mb-2">✅ OAuth Data Ready!</h3>
+          <p className="text-sm text-green-700 mb-2">
+            Your QuickBooks authorization is complete. Just enter your Client ID and Secret below, then click "Exchange for Access Tokens"
+          </p>
+          <div className="text-xs text-green-600 space-y-1">
+            <p><strong>Authorization Code:</strong> XAB11761421553ofDkEGRr4FlkWP8QvDl1b5fu9XvBkH3BMMPB ✅</p>
+            <p><strong>Company ID:</strong> 9341455227664304 ✅</p>
+            <p><strong>Redirect URI:</strong> https://eoge0jr9es1s20s.m.pipedream.net ✅</p>
+          </div>
+        </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
           <div className="mb-4">
@@ -126,9 +232,21 @@ const AuthenticationSetup = () => {
               name="redirectUri"
               value={localAuth.redirectUri}
               onChange={handleChange}
-              placeholder="https://yourdomain.com/callback"
+              placeholder="https://eoge0jr9es1s20s.m.pipedream.net"
               className="w-full p-2 border border-gray-300 rounded-md"
             />
+            <div className="mt-1 text-xs text-gray-600">
+              <p><strong>🚀 Easy Option - Use Pipedream Webhook:</strong></p>
+              <p>1. Go to <a href="https://pipedream.com" target="_blank" rel="noreferrer" className="text-blue-600 underline">pipedream.com</a></p>
+              <p>2. Create a new workflow with HTTP trigger</p>
+              <p>3. Copy the webhook URL (like: <code className="bg-gray-100 px-1 rounded">https://abc123.m.pipedream.net</code>)</p>
+              <p>4. Use that URL in QuickBooks Console</p>
+              <p className="text-green-600 mt-1">✅ No ngrok needed! Works instantly!</p>
+              <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded text-xs">
+                <p><strong>Example:</strong> https://your-webhook.m.pipedream.net</p>
+                <p>Pipedream will capture the OAuth callback data for you to copy back here.</p>
+              </div>
+            </div>
           </div>
           
           <div className="mb-4">
@@ -213,6 +331,22 @@ const AuthenticationSetup = () => {
             Start OAuth Flow
           </button>
           
+          <button
+            onClick={handleExchangeTokens}
+            disabled={isLoading || !localAuth.authorizationCode || !localAuth.clientId || !localAuth.clientSecret}
+            className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded disabled:bg-gray-400"
+          >
+            {isLoading ? 'Exchanging...' : 'Exchange for Access Tokens'}
+          </button>
+
+          <button
+            onClick={handleTestAPI}
+            disabled={isLoading || !localAuth.accessToken}
+            className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white py-2 px-4 rounded disabled:bg-gray-400"
+          >
+            {isLoading ? 'Testing...' : 'Test API Connection'}
+          </button>
+          
           <button 
             onClick={handleRefreshToken}
             disabled={isLoading || !localAuth.refreshToken}
@@ -265,6 +399,7 @@ const AuthenticationSetup = () => {
         </ol>
       </div>
     </div>
+    </>
   );
 };
 

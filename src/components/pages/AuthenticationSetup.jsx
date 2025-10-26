@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { QuickBooksContext } from '../../contexts/QuickBooksContext';
 
 const AuthenticationSetup = () => {
-  const { auth, updateAuth, saveAuthInfo, generateAuthUrl, exchangeAuthCodeForTokens, refreshToken, testQuickBooksAPI } = useContext(QuickBooksContext);
+  const { auth, updateAuth, saveAuthInfo, generateAuthUrl, refreshToken } = useContext(QuickBooksContext);
   const [localAuth, setLocalAuth] = useState(auth);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);

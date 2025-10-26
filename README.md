@@ -23,3 +23,4 @@ A React-based dashboard for QuickBooks Online integration with estimate manageme
 3. Start the development server with `npm start`
 4. Register your app on the [Intuit Developer Portal](https://developer.intuit.com/)
 5. Configure your OAuth credentials in the Authentication tab
+# Manual deployment trigger - 10/26/2025 10:57:15

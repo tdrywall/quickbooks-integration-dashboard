@@ -1,0 +1,46 @@
+QUICKBOOKS DASHBOARD - SERVER SETUP COMMANDS
+=============================================
+
+1. SSH INTO YOUR SERVER:
+ssh root1@192.168.2.169
+
+2. COPY AND PASTE THESE COMMANDS (one block at a time):
+
+# Update system and install Node.js
+sudo apt update -y && sudo apt upgrade -y
+curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+sudo apt-get install -y nodejs
+
+# Install PM2 and create app directory
+sudo npm install -g pm2
+sudo mkdir -p /var/www/quickbooks-dashboard
+sudo chown -R root1:root1 /var/www/quickbooks-dashboard
+
+# Generate SSH key for GitHub Actions
+ssh-keygen -t rsa -b 4096 -C "github-actions" -f ~/.ssh/github-actions -N ""
+
+# Display the keys
+echo "=== PUBLIC KEY (for GitHub Deploy Keys) ==="
+cat ~/.ssh/github-actions.pub
+echo ""
+echo "=== PRIVATE KEY (for GitHub Secrets) ==="
+cat ~/.ssh/github-actions
+
+3. ADD KEYS TO GITHUB:
+
+Deploy Key (PUBLIC):
+- Go to: https://github.com/tdrywall/quickbooks-integration-dashboard/settings/keys
+- Click "Add deploy key"
+- Title: "Production Server"  
+- Key: [paste PUBLIC key from above]
+- ✓ Check "Allow write access"
+
+Repository Secrets (go to https://github.com/tdrywall/quickbooks-integration-dashboard/settings/secrets/actions):
+- HOST: 192.168.2.169
+- USERNAME: root1  
+- SSH_KEY: [paste PRIVATE key from above]
+- PORT: 22
+
+4. TEST DEPLOYMENT:
+The GitHub Actions will automatically deploy when you push code.
+Your app will be available at: http://192.168.2.169:3000

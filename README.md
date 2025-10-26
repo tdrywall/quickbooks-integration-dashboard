@@ -1,6 +1,13 @@
 # QuickBooks Integration Dashboard
 
-A comprehensive dashboard application for QuickBooks Online API integration, combining authentication setup, operations execution, and usage monitoring into a seamless experience.
+# QuickBooks Integration Dashboard
+
+A React-based dashboard for QuickBooks Online integration with estimate management and progress invoicing capabilities.
+
+## 🚀 Live Deployment
+- **Production Server**: http://192.168.2.169:3000
+- **Auto-deployment**: Enabled via GitHub Actions
+- **Last Updated**: October 26, 2025
 
 ## Features
 

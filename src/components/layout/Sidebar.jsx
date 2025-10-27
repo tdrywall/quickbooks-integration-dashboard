@@ -9,8 +9,9 @@ const Sidebar = () => {
   // Navigation items
   const navItems = [
     { path: '/', label: 'Dashboard', icon: 'chart-pie' },
+    { path: '/get-fresh-auth', label: '🔄 Get Fresh Auth', icon: 'sync-alt', highlight: !auth.accessToken },
     { path: '/auth', label: 'Authentication', icon: 'key' },
-    { path: '/debug-auth', label: '🔍 Debug Auth', icon: 'bug', highlight: !auth.accessToken },
+    { path: '/debug-auth', label: '🔍 Debug Auth', icon: 'bug' },
     { path: '/debug-api', label: '🐛 Debug API', icon: 'code' },
     { path: '/estimates', label: 'Estimates', icon: 'document-text' },
     { path: '/progress-billing', label: '🏗️ Progress Billing', icon: 'file-invoice-dollar' },

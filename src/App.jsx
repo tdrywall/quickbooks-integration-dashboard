@@ -14,6 +14,7 @@ import DebugAuth from './components/pages/DebugAuth';
 import QuickSetup from './components/pages/QuickSetup';
 import ProgressBilling from './components/pages/ProgressBilling';
 import DebugApi from './components/pages/DebugApi';
+import GetFreshAuth from './components/pages/GetFreshAuth';
 
 function App() {
   return (
@@ -27,6 +28,7 @@ function App() {
               <Routes>
                 <Route path="/" element={<Dashboard />} />
                 <Route path="/setup" element={<QuickSetup />} />
+                <Route path="/get-fresh-auth" element={<GetFreshAuth />} />
                 <Route path="/auth" element={<AuthenticationSetup />} />
                 <Route path="/debug-auth" element={<DebugAuth />} />
                 <Route path="/debug-api" element={<DebugApi />} />

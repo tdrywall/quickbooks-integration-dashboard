@@ -13,7 +13,7 @@ export const QuickBooksProvider = ({ children }) => {
     realmId: '9341455227664304',
     accessToken: '',
     refreshToken: '',
-    authorizationCode: 'XAB11761421553ofDkEGRr4FlkWP8QvDl1b5fu9XvBkH3BMMPB',
+    authorizationCode: 'XAB11761583269rF4HJBBxewojOORmR1sltWhKdyNhREtOLGl5', // NEW CODE FROM YOUR LATEST AUTH
     tokenExpiryDate: '',
     isAuthenticated: false
   });

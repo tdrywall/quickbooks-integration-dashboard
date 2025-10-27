@@ -34,9 +34,12 @@ function ProgressBilling() {
 
   // Load estimates and projects on mount
   useEffect(() => {
-    loadEstimates();
     loadProjects();
-  }, []);
+    if (auth.accessToken) {
+      loadEstimates();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [auth.accessToken]);
 
   const loadEstimates = async () => {
     if (!auth.accessToken) return;
@@ -189,8 +192,25 @@ function ProgressBilling() {
         </div>
 
         {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
-            {error}
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-6">
+            <p className="font-semibold mb-2">{error}</p>
+            {!auth.accessToken && (
+              <div className="mt-3 text-sm">
+                <p className="mb-2">🔐 <strong>Authentication Required:</strong></p>
+                <p className="mb-2">If you're viewing this in VS Code's preview, <strong>open in external browser instead:</strong></p>
+                <a 
+                  href="http://localhost:3000/progress-billing" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="inline-block bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors"
+                >
+                  🌐 Open in Browser
+                </a>
+                <p className="mt-3 text-xs text-gray-600">
+                  Or navigate to: <strong>🔍 Debug Auth</strong> in the sidebar to authenticate
+                </p>
+              </div>
+            )}
           </div>
         )}
 

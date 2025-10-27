@@ -4,180 +4,124 @@ import { QuickBooksContext } from '../../contexts/QuickBooksContext';
 const EstimateViewer = () => {
   const { auth } = useContext(QuickBooksContext);
   const [estimates, setEstimates] = useState([]);
+  const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [selectedEstimate, setSelectedEstimate] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
+  const [selectedProject, setSelectedProject] = useState('');
+  const [groupedEstimates, setGroupedEstimates] = useState({});
+  const [viewMode, setViewMode] = useState('list'); // 'list' or 'project'
 
-  // Mock data for development - replace with real API calls
-  const mockEstimates = [
-    {
-      Id: "1",
-      DocNumber: "EST-2024-001",
-      TxnDate: "2024-10-20",
-      CustomerRef: { value: "1", name: "Taylor Construction" },
-      TotalAmt: 15750.00,
-      PrivateNote: "Kitchen renovation estimate",
-      TxnStatus: "Pending",
-      Line: [
-        {
-          Id: "1",
-          LineNum: 1,
-          Amount: 8500.00,
-          DetailType: "SalesItemLineDetail",
-          SalesItemLineDetail: {
-            ItemRef: { value: "1", name: "Kitchen Cabinets" },
-            Qty: 1,
-            UnitPrice: 8500.00
-          }
-        },
-        {
-          Id: "2", 
-          LineNum: 2,
-          Amount: 4250.00,
-          DetailType: "SalesItemLineDetail",
-          SalesItemLineDetail: {
-            ItemRef: { value: "2", name: "Countertop Installation" },
-            Qty: 25,
-            UnitPrice: 170.00
-          }
-        },
-        {
-          Id: "3",
-          LineNum: 3, 
-          Amount: 3000.00,
-          DetailType: "SalesItemLineDetail",
-          SalesItemLineDetail: {
-            ItemRef: { value: "3", name: "Labor - Kitchen Renovation" },
-            Qty: 40,
-            UnitPrice: 75.00
-          }
-        }
-      ]
-    },
-    {
-      Id: "2",
-      DocNumber: "EST-2024-002", 
-      TxnDate: "2024-10-18",
-      CustomerRef: { value: "2", name: "Johnson Builders" },
-      TotalAmt: 25600.00,
-      PrivateNote: "Bathroom addition estimate",
-      TxnStatus: "Accepted",
-      Line: [
-        {
-          Id: "1",
-          LineNum: 1,
-          Amount: 12000.00,
-          DetailType: "SalesItemLineDetail",
-          SalesItemLineDetail: {
-            ItemRef: { value: "4", name: "Bathroom Fixtures" },
-            Qty: 1,
-            UnitPrice: 12000.00
-          }
-        },
-        {
-          Id: "2",
-          LineNum: 2,
-          Amount: 13600.00,
-          DetailType: "SalesItemLineDetail", 
-          SalesItemLineDetail: {
-            ItemRef: { value: "5", name: "Construction Labor" },
-            Qty: 80,
-            UnitPrice: 170.00
-          }
-        }
-      ]
-    },
-    {
-      Id: "3",
-      DocNumber: "EST-2024-003",
-      TxnDate: "2024-10-15", 
-      CustomerRef: { value: "3", name: "Smith Residential" },
-      TotalAmt: 8750.00,
-      PrivateNote: "Deck construction estimate",
-      TxnStatus: "Draft",
-      Line: [
-        {
-          Id: "1",
-          LineNum: 1,
-          Amount: 4500.00,
-          DetailType: "SalesItemLineDetail",
-          SalesItemLineDetail: {
-            ItemRef: { value: "6", name: "Deck Materials" },
-            Qty: 1,
-            UnitPrice: 4500.00
-          }
-        },
-        {
-          Id: "2", 
-          LineNum: 2,
-          Amount: 4250.00,
-          DetailType: "SalesItemLineDetail",
-          SalesItemLineDetail: {
-            ItemRef: { value: "7", name: "Deck Installation Labor" },
-            Qty: 25,
-            UnitPrice: 170.00
-          }
-        }
-      ]
-    }
-  ];
-
+  // Load real estimates and projects from QuickBooks
   const loadEstimates = async () => {
+    if (!auth.accessToken || !auth.realmId) {
+      setError('QuickBooks authentication required. Please authenticate first.');
+      return;
+    }
+
     setLoading(true);
     setError(null);
     
     try {
-      // Try to fetch real QuickBooks estimates if authenticated
-      if (auth.accessToken && auth.realmId) {
-        console.log('Fetching real QuickBooks estimates...');
-        const response = await fetch('/api/estimates', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            accessToken: auth.accessToken,
-            realmId: auth.realmId,
-            environment: auth.environment || 'sandbox'
-          }),
-        });
+      console.log('Loading estimates from QuickBooks...');
+      
+      const response = await fetch('/api/estimates', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          accessToken: auth.accessToken,
+          realmId: auth.realmId,
+          environment: auth.environment || 'sandbox'
+        })
+      });
 
-        const result = await response.json();
-        
-        if (result.success) {
-          console.log('Real estimates fetched:', result.data);
-          setEstimates(result.data);
-          setLoading(false);
-          return;
-        } else {
-          console.error('Error fetching estimates:', result.error);
-          setError(`QuickBooks API Error: ${result.error?.Fault?.[0]?.Error?.[0]?.Detail || 'Unknown error'}`);
-        }
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error?.message || data.error || 'Failed to load estimates');
       }
-      
-      // Fall back to mock data if not authenticated or API fails
-      console.log('Using mock data...');
-      setTimeout(() => {
-        setEstimates(mockEstimates);
-        setLoading(false);
-      }, 1000);
-      
-    } catch (err) {
-      console.error('Load estimates error:', err);
-      setError(`Connection Error: ${err.message}`);
-      // Fall back to mock data on error
-      setEstimates(mockEstimates);
+
+      if (data.success && data.data) {
+        console.log(`Loaded ${data.data.length} estimates from QuickBooks`);
+        setEstimates(data.data);
+        
+        // Load projects/classes for these estimates
+        await loadProjects();
+      } else {
+        throw new Error('No estimates found or invalid response from QuickBooks');
+      }
+    } catch (error) {
+      console.error('Error loading estimates:', error);
+      setError(`Failed to load estimates: ${error.message}`);
+    } finally {
       setLoading(false);
     }
   };
 
+  // Load QuickBooks Classes (Projects) 
+  const loadProjects = async () => {
+    try {
+      console.log('Loading projects/classes from QuickBooks...');
+      
+      const response = await fetch('/api/classes', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          accessToken: auth.accessToken,
+          realmId: auth.realmId,
+          environment: auth.environment || 'sandbox'
+        })
+      });
+
+      const data = await response.json();
+      
+      if (data.success && data.data) {
+        console.log(`Loaded ${data.data.length} projects/classes`);
+        setProjects(data.data);
+      }
+    } catch (error) {
+      console.error('Error loading projects:', error);
+      // Don't fail the whole operation if projects fail to load
+    }
+  };
+
+  // Load estimates on component mount and when auth changes
   useEffect(() => {
     loadEstimates();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [auth.accessToken, auth.realmId]);
 
+  // Group estimates by project
+  useEffect(() => {
+    if (estimates.length > 0) {
+      const grouped = estimates.reduce((acc, estimate) => {
+        // Look for ClassRef in estimate
+        const classRef = estimate.ClassRef;
+        const projectId = classRef?.value || 'unassigned';
+        const projectName = classRef?.name || 'Unassigned';
+        
+        if (!acc[projectId]) {
+          acc[projectId] = {
+            id: projectId,
+            name: projectName,
+            estimates: []
+          };
+        }
+        
+        acc[projectId].estimates.push(estimate);
+        return acc;
+      }, {});
+      
+      setGroupedEstimates(grouped);
+    }
+  }, [estimates, projects]);
+
+  // Filter estimates based on search, status, and project
   const filteredEstimates = estimates.filter(estimate => {
     const matchesSearch = estimate.CustomerRef.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          estimate.DocNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -185,8 +129,38 @@ const EstimateViewer = () => {
     
     const matchesStatus = statusFilter === 'All' || estimate.TxnStatus === statusFilter;
     
-    return matchesSearch && matchesStatus;
+    const matchesProject = !selectedProject || 
+                          selectedProject === 'all' ||
+                          (estimate.ClassRef?.value === selectedProject) ||
+                          (selectedProject === 'unassigned' && !estimate.ClassRef);
+    
+    return matchesSearch && matchesStatus && matchesProject;
   });
+
+  // Get filtered grouped estimates for project view
+  const getFilteredGroupedEstimates = () => {
+    const filtered = {};
+    Object.keys(groupedEstimates).forEach(projectId => {
+      const project = groupedEstimates[projectId];
+      const filteredProjectEstimates = project.estimates.filter(estimate => {
+        const matchesSearch = estimate.CustomerRef.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                             estimate.DocNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                             estimate.PrivateNote?.toLowerCase().includes(searchTerm.toLowerCase());
+        
+        const matchesStatus = statusFilter === 'All' || estimate.TxnStatus === statusFilter;
+        
+        return matchesSearch && matchesStatus;
+      });
+      
+      if (filteredProjectEstimates.length > 0) {
+        filtered[projectId] = {
+          ...project,
+          estimates: filteredProjectEstimates
+        };
+      }
+    });
+    return filtered;
+  };
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -357,27 +331,74 @@ This will be implemented in the next phase!`);
       </div>
 
       {/* Search and Filters */}
-      <div className="flex gap-4 items-center">
-        <div className="flex-1">
-          <input
-            type="text"
-            placeholder="Search estimates by customer, number, or notes..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
+      <div className="bg-white p-4 rounded-lg shadow-sm border space-y-4">
+        {/* View Toggle */}
+        <div className="flex items-center justify-between">
+          <div className="flex bg-gray-100 rounded-lg p-1">
+            <button
+              onClick={() => setViewMode('list')}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                viewMode === 'list'
+                  ? 'bg-white text-blue-600 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              📋 List View
+            </button>
+            <button
+              onClick={() => setViewMode('project')}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                viewMode === 'project'
+                  ? 'bg-white text-blue-600 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              📁 Project View
+            </button>
+          </div>
+          <div className="text-sm text-gray-600">
+            {filteredEstimates.length} estimates {viewMode === 'project' ? `in ${Object.keys(getFilteredGroupedEstimates()).length} projects` : ''}
+          </div>
         </div>
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-        >
-          <option value="All">All Status</option>
-          <option value="Draft">Draft</option>
-          <option value="Pending">Pending</option>
-          <option value="Accepted">Accepted</option>
-          <option value="Rejected">Rejected</option>
-        </select>
+
+        {/* Filters */}
+        <div className="flex gap-4 items-center">
+          <div className="flex-1">
+            <input
+              type="text"
+              placeholder="Search estimates by customer, number, or notes..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="All">All Status</option>
+            <option value="Draft">Draft</option>
+            <option value="Pending">Pending</option>
+            <option value="Accepted">Accepted</option>
+            <option value="Rejected">Rejected</option>
+          </select>
+          {viewMode === 'list' && (
+            <select
+              value={selectedProject}
+              onChange={(e) => setSelectedProject(e.target.value)}
+              className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">All Projects</option>
+              <option value="unassigned">Unassigned</option>
+              {projects.map((project) => (
+                <option key={project.Id} value={project.Id}>
+                  {project.Name}
+                </option>
+              ))}
+            </select>
+          )}
+        </div>
       </div>
 
       {/* Error Message */}
@@ -387,13 +408,14 @@ This will be implemented in the next phase!`);
         </div>
       )}
 
-      {/* Estimates List */}
+      {/* Estimates Display */}
       {loading ? (
         <div className="text-center py-8">
           <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
           <p className="mt-2 text-gray-600">Loading estimates...</p>
         </div>
-      ) : (
+      ) : viewMode === 'list' ? (
+        // List View
         <div className="bg-white shadow rounded-lg overflow-hidden">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
@@ -403,6 +425,9 @@ This will be implemented in the next phase!`);
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Customer
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Project
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Date
@@ -426,6 +451,9 @@ This will be implemented in the next phase!`);
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     {estimate.CustomerRef.name}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                    {estimate.ClassRef?.name || 'Unassigned'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     {formatDate(estimate.TxnDate)}
@@ -463,6 +491,99 @@ This will be implemented in the next phase!`);
             <div className="text-center py-8 text-gray-500">
               No estimates found matching your criteria.
             </div>
+          )}
+        </div>
+      ) : (
+        // Project View
+        <div className="space-y-6">
+          {Object.keys(getFilteredGroupedEstimates()).length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              No estimates found matching your criteria.
+            </div>
+          ) : (
+            Object.values(getFilteredGroupedEstimates()).map((project) => (
+              <div key={project.id} className="bg-white shadow rounded-lg overflow-hidden">
+                {/* Project Header */}
+                <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-4">
+                  <div className="flex justify-between items-center">
+                    <h3 className="text-lg font-semibold">📁 {project.name}</h3>
+                    <div className="text-sm bg-blue-500 bg-opacity-50 px-3 py-1 rounded-full">
+                      {project.estimates.length} estimate{project.estimates.length !== 1 ? 's' : ''}
+                    </div>
+                  </div>
+                  <div className="mt-2 text-blue-100">
+                    Total Value: {formatCurrency(project.estimates.reduce((sum, est) => sum + est.TotalAmt, 0))}
+                  </div>
+                </div>
+
+                {/* Project Estimates */}
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Estimate #
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Customer
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Date
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Amount
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Status
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Actions
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {project.estimates.map((estimate) => (
+                        <tr key={estimate.Id} className="hover:bg-gray-50">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600">
+                            {estimate.DocNumber}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {estimate.CustomerRef.name}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {formatDate(estimate.TxnDate)}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
+                            {formatCurrency(estimate.TotalAmt)}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(estimate.TxnStatus)}`}>
+                              {estimate.TxnStatus}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+                            <button
+                              onClick={() => setSelectedEstimate(estimate)}
+                              className="text-blue-600 hover:text-blue-900"
+                            >
+                              View
+                            </button>
+                            {estimate.TxnStatus === 'Accepted' && (
+                              <button
+                                onClick={() => handleCreateProgressInvoice(estimate)}
+                                className="text-green-600 hover:text-green-900"
+                              >
+                                Invoice
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            ))
           )}
         </div>
       )}

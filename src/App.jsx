@@ -9,6 +9,7 @@ import OperationsCenter from './components/pages/OperationsCenter';
 import ApiHelp from './components/pages/ApiHelp';
 import OAuthCallback from './components/pages/OAuthCallback';
 import EstimateViewer from './components/pages/EstimateViewer';
+import ContactManagement from './components/pages/ContactManagement';
 
 function App() {
   return (
@@ -24,6 +25,7 @@ function App() {
                 <Route path="/auth" element={<AuthenticationSetup />} />
                 <Route path="/operations" element={<OperationsCenter />} />
                 <Route path="/estimates" element={<EstimateViewer />} />
+                <Route path="/contacts" element={<ContactManagement />} />
                 <Route path="/help" element={<ApiHelp />} />
                 <Route path="/callback" element={<OAuthCallback />} />
                 <Route path="/oauth/callback" element={<OAuthCallback />} />

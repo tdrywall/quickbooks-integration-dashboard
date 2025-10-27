@@ -185,6 +185,44 @@ app.post('/api/estimates', async (req, res) => {
   }
 });
 
+// Fetch classes/projects endpoint
+app.post('/api/classes', async (req, res) => {
+  try {
+    const { accessToken, realmId, environment = 'sandbox' } = req.body;
+    
+    console.log('Fetching classes/projects for realm:', realmId);
+    
+    const baseUrl = environment === 'production' 
+      ? 'https://quickbooks.api.intuit.com'
+      : 'https://sandbox-quickbooks.api.intuit.com';
+
+    const response = await axios.get(
+      `${baseUrl}/v3/company/${realmId}/query?query=SELECT * FROM Class`,
+      {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Accept': 'application/json'
+        }
+      }
+    );
+
+    const classes = response.data.QueryResponse?.Class || [];
+    console.log(`Found ${classes.length} classes/projects`);
+    
+    res.json({
+      success: true,
+      data: classes,
+      count: classes.length
+    });
+  } catch (error) {
+    console.error('Classes fetch error:', error.response?.data || error.message);
+    res.status(error.response?.status || 500).json({ 
+      success: false,
+      error: error.response?.data || { error: 'Failed to fetch classes/projects', details: error.message }
+    });
+  }
+});
+
 // Test company info endpoint
 app.post('/api/company-info', async (req, res) => {
   try {
@@ -266,6 +304,7 @@ app.listen(PORT, () => {
   console.log(`   POST /api/exchange-token - Exchange authorization code`);
   console.log(`   POST /api/refresh-token - Refresh access token`);
   console.log(`   POST /api/estimates - Fetch estimates`);
+  console.log(`   POST /api/classes - Fetch classes/projects`);
   console.log(`   POST /api/company-info - Test API connection`);
   console.log(`   POST /api/create-invoice - Create invoice`);
   console.log(`   POST /api/quickbooks/get - Generic GET proxy`);

@@ -11,6 +11,7 @@ const Sidebar = () => {
     { path: '/', label: 'Dashboard', icon: 'chart-pie' },
     { path: '/auth', label: 'Authentication', icon: 'key' },
     { path: '/estimates', label: 'Estimates', icon: 'document-text' },
+    { path: '/contacts', label: 'Contacts', icon: 'users' },
     { path: '/operations', label: 'Operations', icon: 'cog' },
     { path: '/help', label: 'API Help', icon: 'question-circle' }
   ];

@@ -11,6 +11,7 @@ import OAuthCallback from './components/pages/OAuthCallback';
 import EstimateViewer from './components/pages/EstimateViewer';
 import ContactManagement from './components/pages/ContactManagement';
 import DebugAuth from './components/pages/DebugAuth';
+import QuickSetup from './components/pages/QuickSetup';
 
 function App() {
   return (
@@ -23,6 +24,7 @@ function App() {
             <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-200 p-4">
               <Routes>
                 <Route path="/" element={<Dashboard />} />
+                <Route path="/setup" element={<QuickSetup />} />
                 <Route path="/auth" element={<AuthenticationSetup />} />
                 <Route path="/debug-auth" element={<DebugAuth />} />
                 <Route path="/operations" element={<OperationsCenter />} />

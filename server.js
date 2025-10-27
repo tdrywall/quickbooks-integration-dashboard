@@ -199,10 +199,16 @@ app.post('/api/estimates', async (req, res) => {
       count: allEstimates.length
     });
   } catch (error) {
-    console.error('Estimates fetch error:', error.response?.data || error.message);
+    console.error('❌ Estimates fetch error:', error.response?.data || error.message);
+    const errorMessage = error.response?.data?.Fault?.Error?.[0]?.Message 
+      || error.response?.data?.error 
+      || error.message 
+      || 'Failed to fetch estimates';
+    
     res.status(error.response?.status || 500).json({ 
       success: false,
-      error: error.response?.data || { error: 'Failed to fetch estimates', details: error.message }
+      error: errorMessage,
+      details: error.response?.data || error.message
     });
   }
 });

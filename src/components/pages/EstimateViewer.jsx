@@ -13,7 +13,7 @@ const EstimateViewer = () => {
   const [statusFilter, setStatusFilter] = useState('All');
   const [selectedProject, setSelectedProject] = useState('');
   const [groupedEstimates, setGroupedEstimates] = useState({});
-  const [viewMode, setViewMode] = useState('list'); // 'list' or 'project'
+  const [viewMode, setViewMode] = useState('project'); // 'list' or 'project' - DEFAULT TO PROJECT VIEW
 
   // Load real estimates and projects from QuickBooks
   const loadEstimates = async () => {

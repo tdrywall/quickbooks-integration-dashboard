@@ -152,29 +152,51 @@ app.post('/api/estimates', async (req, res) => {
   try {
     const { accessToken, realmId, environment = 'sandbox' } = req.body;
     
-    console.log('Fetching estimates for realm:', realmId);
+    console.log('Fetching ALL estimates for realm:', realmId);
     
     const baseUrl = environment === 'production' 
       ? 'https://quickbooks.api.intuit.com'
       : 'https://sandbox-quickbooks.api.intuit.com';
 
-    const response = await axios.get(
-      `${baseUrl}/v3/company/${realmId}/query?query=SELECT * FROM Estimate`,
-      {
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'Accept': 'application/json'
-        }
-      }
-    );
+    // Fetch ALL estimates using pagination (QuickBooks default max is 1000 per page)
+    let allEstimates = [];
+    let startPosition = 1;
+    let hasMore = true;
+    const maxPerPage = 1000;
 
-    const estimates = response.data.QueryResponse?.Estimate || [];
-    console.log(`Found ${estimates.length} estimates`);
+    while (hasMore) {
+      const query = `SELECT * FROM Estimate STARTPOSITION ${startPosition} MAXRESULTS ${maxPerPage}`;
+      console.log(`Fetching estimates: ${query}`);
+      
+      const response = await axios.get(
+        `${baseUrl}/v3/company/${realmId}/query?query=${encodeURIComponent(query)}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Accept': 'application/json'
+          }
+        }
+      );
+
+      const estimates = response.data.QueryResponse?.Estimate || [];
+      allEstimates = allEstimates.concat(estimates);
+      
+      console.log(`Fetched ${estimates.length} estimates (total so far: ${allEstimates.length})`);
+      
+      // Check if there are more results
+      if (estimates.length < maxPerPage) {
+        hasMore = false;
+      } else {
+        startPosition += maxPerPage;
+      }
+    }
+
+    console.log(`✅ Found ${allEstimates.length} TOTAL estimates`);
     
     res.json({
       success: true,
-      data: estimates,
-      count: estimates.length
+      data: allEstimates,
+      count: allEstimates.length
     });
   } catch (error) {
     console.error('Estimates fetch error:', error.response?.data || error.message);

@@ -313,10 +313,11 @@ app.post('/api/create-invoice', async (req, res) => {
   }
 });
 
-// Serve React app for all other routes
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'build', 'index.html'));
-});
+// Serve React app for all other routes (only for production build)
+// Comment out during development - React dev server handles frontend
+// app.get('*', (req, res) => {
+//   res.sendFile(path.join(__dirname, 'build', 'index.html'));
+// });
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {

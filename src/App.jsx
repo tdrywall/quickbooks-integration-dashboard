@@ -13,6 +13,7 @@ import ContactManagement from './components/pages/ContactManagement';
 import DebugAuth from './components/pages/DebugAuth';
 import QuickSetup from './components/pages/QuickSetup';
 import ProgressBilling from './components/pages/ProgressBilling';
+import DebugApi from './components/pages/DebugApi';
 
 function App() {
   return (
@@ -28,6 +29,7 @@ function App() {
                 <Route path="/setup" element={<QuickSetup />} />
                 <Route path="/auth" element={<AuthenticationSetup />} />
                 <Route path="/debug-auth" element={<DebugAuth />} />
+                <Route path="/debug-api" element={<DebugApi />} />
                 <Route path="/operations" element={<OperationsCenter />} />
                 <Route path="/estimates" element={<EstimateViewer />} />
                 <Route path="/progress-billing" element={<ProgressBilling />} />

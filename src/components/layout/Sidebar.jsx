@@ -11,6 +11,7 @@ const Sidebar = () => {
     { path: '/', label: 'Dashboard', icon: 'chart-pie' },
     { path: '/auth', label: 'Authentication', icon: 'key' },
     { path: '/debug-auth', label: '🔍 Debug Auth', icon: 'bug', highlight: !auth.accessToken },
+    { path: '/debug-api', label: '🐛 Debug API', icon: 'code' },
     { path: '/estimates', label: 'Estimates', icon: 'document-text' },
     { path: '/progress-billing', label: '🏗️ Progress Billing', icon: 'file-invoice-dollar' },
     { path: '/contacts', label: 'Contacts', icon: 'users' },

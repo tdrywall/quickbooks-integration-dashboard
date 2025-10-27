@@ -12,6 +12,7 @@ import EstimateViewer from './components/pages/EstimateViewer';
 import ContactManagement from './components/pages/ContactManagement';
 import DebugAuth from './components/pages/DebugAuth';
 import QuickSetup from './components/pages/QuickSetup';
+import ProgressBilling from './components/pages/ProgressBilling';
 
 function App() {
   return (
@@ -29,6 +30,7 @@ function App() {
                 <Route path="/debug-auth" element={<DebugAuth />} />
                 <Route path="/operations" element={<OperationsCenter />} />
                 <Route path="/estimates" element={<EstimateViewer />} />
+                <Route path="/progress-billing" element={<ProgressBilling />} />
                 <Route path="/contacts" element={<ContactManagement />} />
                 <Route path="/help" element={<ApiHelp />} />
                 <Route path="/callback" element={<OAuthCallback />} />

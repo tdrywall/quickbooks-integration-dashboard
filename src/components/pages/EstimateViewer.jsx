@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { QuickBooksContext } from '../../contexts/QuickBooksContext';
+import { generateEstimatePdf } from '../../utils/estimatePdf';
 
 const EstimateViewer = () => {
   const { auth } = useContext(QuickBooksContext);
@@ -187,6 +188,19 @@ const EstimateViewer = () => {
     });
   };
 
+  const handleExportEstimatePdf = (estimate) => {
+    if (!estimate) return;
+
+    try {
+      generateEstimatePdf(estimate, {
+        branding: { accentColor: '#1d4ed8' },
+      });
+    } catch (error) {
+      console.error('Error generating estimate PDF:', error);
+      alert('Failed to generate the PDF. Please try again or check the console for details.');
+    }
+  };
+
   const handleCreateProgressInvoice = async (estimate) => {
     try {
       setLoading(true);
@@ -296,6 +310,12 @@ This will be implemented in the next phase!`);
 
             {/* Actions */}
             <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => handleExportEstimatePdf(estimate)}
+                className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
+              >
+                Export PDF
+              </button>
               <button
                 onClick={() => handleCreateProgressInvoice(estimate)}
                 disabled={estimate.TxnStatus !== 'Accepted'}
@@ -473,6 +493,12 @@ This will be implemented in the next phase!`);
                     >
                       View
                     </button>
+                    <button
+                      onClick={() => handleExportEstimatePdf(estimate)}
+                      className="text-indigo-600 hover:text-indigo-900"
+                    >
+                      Export
+                    </button>
                     {estimate.TxnStatus === 'Accepted' && (
                       <button
                         onClick={() => handleCreateProgressInvoice(estimate)}
@@ -567,6 +593,12 @@ This will be implemented in the next phase!`);
                               className="text-blue-600 hover:text-blue-900"
                             >
                               View
+                            </button>
+                            <button
+                              onClick={() => handleExportEstimatePdf(estimate)}
+                              className="text-indigo-600 hover:text-indigo-900"
+                            >
+                              Export
                             </button>
                             {estimate.TxnStatus === 'Accepted' && (
                               <button

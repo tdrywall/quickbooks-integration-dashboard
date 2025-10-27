@@ -57,17 +57,28 @@ function ProgressBilling() {
       });
 
       const data = await response.json();
-      if (data.success) {
-        setEstimates(data.estimates || []);
-        setError('');
+      
+      console.log('API Response:', data); // Debug log
+      
+      if (!response.ok) {
+        throw new Error(data.error?.message || data.error || 'Failed to load estimates');
+      }
+
+      if (data.success && data.data) {
+        console.log(`✅ Loaded ${data.data.length} estimates for Progress Billing`);
+        setEstimates(data.data);
+        setError(''); // Clear error on success
+      } else if (data.success && data.estimates) {
+        // Fallback to data.estimates if that's the structure
+        console.log(`✅ Loaded ${data.estimates.length} estimates for Progress Billing`);
+        setEstimates(data.estimates);
+        setError(''); // Clear error on success
       } else {
-        const errorMsg = typeof data.error === 'object' ? JSON.stringify(data.error) : data.error;
-        setError('Failed to load estimates: ' + errorMsg);
-        console.error('Estimate load error:', data.error);
+        throw new Error('No estimates found or invalid response from QuickBooks');
       }
     } catch (err) {
+      console.error('❌ Progress Billing estimate load error:', err);
       setError('Error loading estimates: ' + err.message);
-      console.error('Estimate load exception:', err);
     } finally {
       setLoading(false);
     }

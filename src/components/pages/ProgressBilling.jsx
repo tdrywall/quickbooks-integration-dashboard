@@ -3,13 +3,13 @@
  * Main interface for managing progress billings, draws, and holdbacks
  */
 
-import React, { useState, useEffect } from 'react';
-import { useQuickBooks } from '../../contexts/QuickBooksContext';
+import React, { useState, useEffect, useContext } from 'react';
+import { QuickBooksContext } from '../../contexts/QuickBooksContext';
 import { progressBillingManager } from '../../utils/progressBilling';
 import { downloadProgressInvoicePdf, downloadHoldbackReleasePdf } from '../../utils/progressInvoicePdf';
 
 function ProgressBilling() {
-  const { auth } = useQuickBooks();
+  const { auth } = useContext(QuickBooksContext);
   const [estimates, setEstimates] = useState([]);
   const [projects, setProjects] = useState([]);
   const [selectedProject, setSelectedProject] = useState(null);
@@ -56,11 +56,15 @@ function ProgressBilling() {
       const data = await response.json();
       if (data.success) {
         setEstimates(data.estimates || []);
+        setError('');
       } else {
-        setError('Failed to load estimates: ' + data.error);
+        const errorMsg = typeof data.error === 'object' ? JSON.stringify(data.error) : data.error;
+        setError('Failed to load estimates: ' + errorMsg);
+        console.error('Estimate load error:', data.error);
       }
     } catch (err) {
       setError('Error loading estimates: ' + err.message);
+      console.error('Estimate load exception:', err);
     } finally {
       setLoading(false);
     }

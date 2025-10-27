@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { QuickBooksContext } from '../../contexts/QuickBooksContext';
 
 const OAuthCallback = () => {
-  const { updateAuth } = useContext(QuickBooksContext);
+  const { updateAuth, exchangeAuthCodeForTokens } = useContext(QuickBooksContext);
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
@@ -20,18 +20,31 @@ const OAuthCallback = () => {
 
     if (code && realmId) {
       // Update the auth context with the authorization code and realm ID
-      updateAuth(prev => ({
-        ...prev,
+      updateAuth({
         realmId: realmId,
         authorizationCode: code
-      }));
+      });
 
-      // Redirect to authentication page with success message
-      navigate('/auth?success=true&code=' + encodeURIComponent(code));
+      // Automatically exchange the authorization code for tokens
+      console.log('🔄 Automatically exchanging authorization code for access tokens...');
+      
+      exchangeAuthCodeForTokens(code).then(result => {
+        if (result.success) {
+          console.log('✅ Successfully obtained access tokens!');
+          navigate('/estimates?success=authenticated');
+        } else {
+          console.error('❌ Token exchange failed:', result.message);
+          // Still save the code so user can manually exchange on debug page
+          navigate('/debug-auth?error=' + encodeURIComponent(result.message));
+        }
+      }).catch(err => {
+        console.error('❌ Token exchange error:', err);
+        navigate('/debug-auth?error=' + encodeURIComponent(err.message));
+      });
     } else {
       navigate('/auth?error=missing_parameters');
     }
-  }, [searchParams, updateAuth, navigate]);
+  }, [searchParams, updateAuth, exchangeAuthCodeForTokens, navigate]);
 
   return (
     <div className="flex items-center justify-center min-h-screen">

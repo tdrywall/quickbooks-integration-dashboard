@@ -6,8 +6,8 @@ export const QuickBooksContext = createContext();
 export const QuickBooksProvider = ({ children }) => {
   // State for authentication
   const [auth, setAuth] = useState({
-    clientId: '',
-    clientSecret: '',
+    clientId: localStorage.getItem('qbo_client_id') || '',
+    clientSecret: localStorage.getItem('qbo_client_secret') || '',
     redirectUri: 'https://eoge0jr9es1s20s.m.pipedream.net',
     environment: 'sandbox',
     realmId: '9341455227664304',
@@ -69,6 +69,9 @@ export const QuickBooksProvider = ({ children }) => {
   // Save auth to localStorage whenever it changes
   useEffect(() => {
     localStorage.setItem('qbo_auth', JSON.stringify(auth));
+    // Also save credentials separately for easy access
+    if (auth.clientId) localStorage.setItem('qbo_client_id', auth.clientId);
+    if (auth.clientSecret) localStorage.setItem('qbo_client_secret', auth.clientSecret);
   }, [auth]);
   
   // Save operations history to localStorage whenever it changes

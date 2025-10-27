@@ -6,8 +6,8 @@ export const QuickBooksContext = createContext();
 export const QuickBooksProvider = ({ children }) => {
   // State for authentication
   const [auth, setAuth] = useState({
-    clientId: localStorage.getItem('qbo_client_id') || '',
-    clientSecret: localStorage.getItem('qbo_client_secret') || '',
+    clientId: localStorage.getItem('qbo_client_id') || 'ABU6ALF7ZeebZ0JhhkPyp5H98xls1qLQIlp2GqtFE6F1dIx8zc',
+    clientSecret: localStorage.getItem('qbo_client_secret') || 'kJagTCOHDXCr6illNndWqqkNtxV6AEHroy2vOpw0',
     redirectUri: 'https://eoge0jr9es1s20s.m.pipedream.net',
     environment: 'sandbox',
     realmId: '9341455227664304',
@@ -39,7 +39,25 @@ export const QuickBooksProvider = ({ children }) => {
     const savedAuth = localStorage.getItem('qbo_auth');
     if (savedAuth) {
       try {
-        setAuth(JSON.parse(savedAuth));
+        const parsedAuth = JSON.parse(savedAuth);
+        setAuth(parsedAuth);
+        
+        // Auto-exchange token if we have credentials and auth code but no access token
+        if (parsedAuth.clientId && parsedAuth.clientSecret && parsedAuth.authorizationCode && !parsedAuth.accessToken) {
+          console.log('🔄 Auto-exchanging authorization code for tokens...');
+          // We'll trigger this after the component mounts
+          setTimeout(() => {
+            const exchangeFunc = async () => {
+              const result = await exchangeAuthCodeForTokens(parsedAuth.authorizationCode);
+              if (result.success) {
+                console.log('✅ Auto-exchange successful!');
+              } else {
+                console.log('❌ Auto-exchange failed:', result.message);
+              }
+            };
+            exchangeFunc();
+          }, 1000);
+        }
       } catch (err) {
         console.error('Error loading saved auth:', err);
       }

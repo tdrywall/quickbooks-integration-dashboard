@@ -10,6 +10,7 @@ const Sidebar = () => {
   const navItems = [
     { path: '/', label: 'Dashboard', icon: 'chart-pie' },
     { path: '/auth', label: 'Authentication', icon: 'key' },
+    { path: '/debug-auth', label: '🔍 Debug Auth', icon: 'bug', highlight: !auth.accessToken },
     { path: '/estimates', label: 'Estimates', icon: 'document-text' },
     { path: '/contacts', label: 'Contacts', icon: 'users' },
     { path: '/operations', label: 'Operations', icon: 'cog' },
@@ -28,7 +29,7 @@ const Sidebar = () => {
             <li key={item.path} className="mb-2">
               <Link
                 to={item.path}
-                className={`flex items-center px-6 py-3 hover:bg-gray-700 ${location.pathname === item.path ? 'bg-gray-700' : ''}`}
+                className={`flex items-center px-6 py-3 hover:bg-gray-700 ${location.pathname === item.path ? 'bg-gray-700' : ''} ${item.highlight ? 'bg-yellow-600 hover:bg-yellow-700 animate-pulse' : ''}`}
               >
                 <i className={`fas fa-${item.icon} w-5`}></i>
                 <span>{item.label}</span>

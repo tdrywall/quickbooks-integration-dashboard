@@ -10,6 +10,7 @@ import ApiHelp from './components/pages/ApiHelp';
 import OAuthCallback from './components/pages/OAuthCallback';
 import EstimateViewer from './components/pages/EstimateViewer';
 import ContactManagement from './components/pages/ContactManagement';
+import DebugAuth from './components/pages/DebugAuth';
 
 function App() {
   return (
@@ -23,6 +24,7 @@ function App() {
               <Routes>
                 <Route path="/" element={<Dashboard />} />
                 <Route path="/auth" element={<AuthenticationSetup />} />
+                <Route path="/debug-auth" element={<DebugAuth />} />
                 <Route path="/operations" element={<OperationsCenter />} />
                 <Route path="/estimates" element={<EstimateViewer />} />
                 <Route path="/contacts" element={<ContactManagement />} />
